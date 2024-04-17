@@ -1,0 +1,810 @@
+#!/usr/bin/env bash
+
+BASE_DIR="$(cd "$(dirname "$0")"; pwd)" || exit 2
+
+IFS=$'\n'
+entrylist=('Go Back')
+rawentry="$(find $BASE_DIR/entries -type f)"
+for i in $rawentry; do
+i=${i##*/}
+entrylist+=("$i")
+done
+
+COLUMNS=12
+
+
+#This function is to display the top header in a centred alignment!
+display_center(){
+    columns="$(tput cols)"
+    while IFS= read -r line; do
+        printf "%*s\n" $(( (${#line} + columns) / 2)) "$line"
+    done < "$1"
+}
+
+# Function to center multiline text horizontally and vertically in the terminal
+center_multiline_text() {
+local text="$1"
+# Convert input into an array where each line is an element
+IFS=$'\n' read -r -d '' -a lines <<< "$text"
+
+# Get terminal width and height
+local term_width=$(tput cols)
+local term_height=$(tput lines)
+
+# Calculate vertical padding
+local total_lines=${#lines[@]}
+local vertical_padding=$(( (term_height - total_lines) / 2 ))
+
+# Clear the screen
+clear
+
+# Print vertical padding
+for (( i=1; i<vertical_padding; i++ )); do
+echo ""
+done
+
+# Center each line of the ASCII art
+for line in "${lines[@]}"; do
+local line_length=${#line}
+local horizontal_padding=$(( (term_width - line_length) / 2 ))
+printf "%${horizontal_padding}s%s\n" "" "$line"
+done
+}
+
+#This string is to be displayed as a custom "title header" at the top, feel free to customise it, as most Terminals in Fallout have their own custom one based on their owner!
+greeter=$'
+            Proto Personal Text Based Log Manufactured and Maintained by The Archive In Between
+_____________________________________________________________________________________________________________'
+
+
+
+#Main Menu Screen
+mainmenufunc () 
+{
+clear
+
+#display the Menu text
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+display_center "$BASE_DIR/greeterheader.txt" | pv -qL 100
+echo "$greeter" | pv -qL 100
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Choose Operation: | pv -qL 100
+
+#Display the menu options
+COLUMNS=12
+select menuchoice in "View Overseer Logs" "Portal Gate Status" "Broadcasts" "Exit Terminal"
+do
+    case $menuchoice in
+    "View Overseer Logs")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    logfunc
+    ;;
+    "Portal Gate Status")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    portalstatfunc
+    ;;
+    "Broadcasts")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    broadcastfunc
+    ;;
+    "Exit Terminal")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    echo Goodbye! && exit
+    ;;
+    *)
+    play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+    ;;
+    esac
+done
+}
+
+logfunc () 
+{
+clear
+
+#display the Menu text
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+display_center "$BASE_DIR/greeterheader.txt" | pv -qL 100
+echo "$greeter" | pv -qL 100
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Choose Operation | pv -qL 100
+
+#Display the menu options
+COLUMNS=12
+select menuchoice in "View Journal Entries" "Log a Journal Entry" "Delete a Journal Entry" "Exit Log"
+do
+    case $menuchoice in
+    "View Journal Entries")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    viewentriesfunc
+    ;;
+    "Log a Journal Entry")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    writeentryfunc
+    ;;
+    "Delete a Journal Entry")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    deleteentryfunc
+    ;;
+    "Exit Log")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    mainmenufunc
+    ;;
+    *)
+    play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+    ;;
+    esac
+done
+}
+
+portalstatfunc () 
+{
+clear
+
+#display the Menu text
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+display_center "$BASE_DIR/greeterheader.txt" | pv -qL 100
+echo "$greeter" | pv -qL 100
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Choose Operation | pv -qL 100
+
+#Display the menu options
+COLUMNS=12
+select menuchoice in "Sector Status" "Fault Logs" "Exit Status"
+do
+    case $menuchoice in
+    "Sector Status")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    show_portal_status
+    ;;
+    "Fault Logs")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    fault_logfunc
+    ;;
+    "Exit Status")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    mainmenufunc
+    ;;
+    *)
+    play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+    ;;
+    esac
+done
+}
+
+
+show_portal_status() {
+# Directory where the portal status file will be saved
+local status_dir="portal_status"
+local status_file="${status_dir}/status.txt"
+
+# Check if the directory exists, if not create it
+if [ ! -d "$status_dir" ]; then
+mkdir -p "$status_dir"
+fi
+
+# Clear any previous status file
+> "$status_file"
+
+# Declare an array of sectors
+local sectors=("Sector A" "Sector B" "Sector C" "Sector D" "Sector E" "Sector F")
+
+# Declare an array of possible statuses
+local statuses=("Functioning" "Shutdown" "Under Maintenance")
+
+# Output header to both terminal and file
+echo "Portal Status of Sectors in Sigil:" | tee -a "$status_file"
+echo "----------------------------------" | tee -a "$status_file"
+
+# Loop through each sector to assign a random status
+for sector in "${sectors[@]}"; do
+# Generate a random index to select a random status
+local random_status_index=$(( RANDOM % ${#statuses[@]} ))
+local random_status=${statuses[random_status_index]}
+
+# Display the sector and its randomly selected status and append to file
+printf "%-10s: %s\n" "$sector" "$random_status" | tee -a "$status_file"
+done
+
+# Output footer to both terminal and file
+echo "----------------------------------" | tee -a "$status_file"
+echo "Status information is updated frequently. Please check back for real-time updates." | tee -a "$status_file"
+}
+
+fault_logfunc () 
+{
+#adding all the text files as individual strings to be used as a selection menu
+entrylist=('Go Back')
+rawentry="$(find $BASE_DIR/fault_logs -type f)"
+for i in $rawentry; do
+i=${i##*/}
+entrylist+=("$i")
+done
+
+#display the Menu text
+    clear
+    display_center "$BASE_DIR/greeterheader.txt"
+    echo "$greeter" 
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    echo Which Entry would you like to access? | pv -qL 100
+    
+    #display the menu options
+    COLUMNS=12
+    select readoption in ${entrylist[@]}
+    do
+    case $readoption in
+    "Go Back")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    portalstatfunc
+    ;;
+        *)
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    ;;
+    esac
+
+    #displays the selected entry
+    clear
+    display_center "$BASE_DIR/greeterheader.txt"
+    echo "$greeter"
+    echo
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    echo "$readoption:"  | pv -qL 100
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    cat< "$BASE_DIR/fault_logs/$readoption"  | pv -qL 100
+    echo
+    read -p "Press enter to continue"
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    
+    #goes back to main menu
+    portalstatfunc
+    done
+}
+
+
+#############################################################################3
+broadcastfunc () 
+{
+clear
+
+#display the Menu text
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+display_center "$BASE_DIR/greeterheader.txt" | pv -qL 100
+echo "$greeter" | pv -qL 100
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Choose Operation | pv -qL 100
+
+#Display the menu options
+COLUMNS=12
+select menuchoice in "View Broadcast" "Exit Broadcasts"
+do
+    case $menuchoice in
+    "View Broadcast")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    viewbroadcasts
+    ;;
+    "Exit Broadcasts")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    mainmenufunc
+    ;;
+    *)
+    play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+    ;;
+    esac
+done
+}
+
+viewbroadcasts () {
+    # Adding all the .wav files as individual strings to be used as a selection menu
+    entrylist=('Go Back')
+    rawentry="$(find $BASE_DIR/broadcasts -type f -name "*.wav")"
+    for i in $rawentry; do
+        i=${i##*/}
+        entrylist+=("$i")
+    done
+
+    # Display the Menu text
+    clear
+    display_center "$BASE_DIR/greeterheader.txt"
+    echo "$greeter" 
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    echo "Which Entry would you like to access?" | pv -qL 100
+    
+    # Display the menu options
+    COLUMNS=12
+    select readoption in "${entrylist[@]}"
+    do
+        case $readoption in
+            "Go Back")
+                play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+                mainmenufunc
+                ;;
+            *)
+                # Plays the selected .wav file
+                echo "Now Playing: $readoption" | pv -qL 100
+                play -q "$BASE_DIR/broadcasts/$readoption" -t alsa
+                ;;
+        esac
+
+        # Displaying information about the selected entry
+        clear
+        display_center "$BASE_DIR/greeterheader.txt"
+        echo "$greeter"
+        echo "Just Played: $readoption" | pv -qL 100
+        echo
+        play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+
+        echo
+        read -p "Press enter to continue"
+        play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+        
+        # Goes back to main menu
+        viewbroadcasts
+    done
+}
+
+
+############################################################
+#Option 1 Menu, Viewing Journal Entries
+viewentriesfunc () 
+{
+#adding all the text files as individual strings to be used as a selection menu
+entrylist=('Go Back')
+rawentry="$(find $BASE_DIR/entries -type f)"
+for i in $rawentry; do
+i=${i##*/}
+entrylist+=("$i")
+done
+
+#display the Menu text
+    clear
+    display_center "$BASE_DIR/greeterheader.txt"
+    echo "$greeter" 
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    echo Which Entry would you like to access? | pv -qL 100
+    
+    #display the menu options
+    COLUMNS=12
+    select readoption in ${entrylist[@]}
+    do
+    case $readoption in
+    "Go Back")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    mainmenufunc
+    ;;
+        *)
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    ;;
+    esac
+
+    #displays the selected entry
+    clear
+    display_center "$BASE_DIR/greeterheader.txt"
+    echo "$greeter"
+    echo
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    echo "$readoption:"  | pv -qL 100
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    cat< "$BASE_DIR/entries/$readoption"  | pv -qL 100
+    echo
+    read -p "Press enter to continue"
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    
+    #goes back to main menu
+    mainmenufunc
+    done
+}
+
+#menu for writing an entry
+writeentryfunc () 
+{
+
+#displays menu text
+clear
+display_center "$BASE_DIR/greeterheader.txt"
+echo "$greeter" 
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo "Name the entry?" | pv -qL 100
+
+#reads user input
+read entrynameinput 
+play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+
+#displays menu text again
+clear
+display_center "$BASE_DIR/greeterheader.txt"
+echo "$greeter" 
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Press CTRL+D to finalise entry  | pv -qL 100
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo $entrynameinput:  | pv -qL 100
+echo
+#uses cat text editor to write entries. ctrl+d to finish
+cat >"$BASE_DIR/entries/$entrynameinput"
+cat "$BASE_DIR/entries/$entrynameinput"
+clear
+play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+
+#returns to mainmenu
+mainmenufunc
+
+
+}
+
+#menu to delete an entry
+deleteentryfunc () 
+{
+
+#adding all the text files as individual strings to be used as a selection menu
+entrylist=('Go Back')
+rawentry="$(find $BASE_DIR/entries -type f)"
+for i in $rawentry; do
+i=${i##*/}
+entrylist+=("$i")
+done
+
+    #displays menu text
+    clear
+    display_center "$BASE_DIR/greeterheader.txt"
+    echo "$greeter" 
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    echo Which Entry would you like to delete? | pv -qL 100
+    
+    #displays menu options
+    COLUMNS=12
+    select readoption in ${entrylist[@]}
+    do
+    case $readoption in
+    "Go Back")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    mainmenufunc
+    ;;
+        *)
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    ;;
+    esac
+    
+    #displays menu text again
+    clear
+    display_center "$BASE_DIR/greeterheader.txt"
+    echo "$greeter"
+    echo
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    echo "Delete $readoption? Type Operator Passcode to Continue"  | pv -qL 100
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    
+    #detects user input if they typed in "yes". case insensitive as it converts it to all caps
+    read confirmdeletion
+        if  [[ ${confirmdeletion} == "Yes" ]]
+        then
+        rm -f "$BASE_DIR/entries/$readoption"
+        play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+        echo FILE DELETED!
+        play -q  $BASE_DIR/ui_hacking_passgood.wav -t alsa
+        sleep 0.1
+        mainmenufunc
+        
+        #if something other than yes was typed in
+        else
+        echo OPERATION CANCELLED
+        play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+        play -q  $BASE_DIR/ui_hacking_passbad.wav -t alsa
+        sleep 0.2
+        
+        
+        #goes back to main menu
+        mainmenufunc
+        fi
+        done
+}
+
+#same as main menu screen function, but without the annoying animations
+repeatmainmenufunc ()
+{
+clear
+
+display_center "$BASE_DIR/greeterheader.txt"
+echo "$greeter" 
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Choose Operation? | pv -qL 100
+COLUMNS=12
+select menuchoice in "View Journal Entries" "Log a Journal Entry" "Delete a Journal Entry" "Exit Log"
+do
+    case $menuchoice in
+    "View Journal Entries")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    viewentriesfunc
+    ;;
+    "Log a Journal Entry")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    writeentryfunc
+    ;;
+    "Delete a Journal Entry")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    deleteentryfunc
+    ;;
+    "Exit Log")
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    echo Goodbye! && exit
+    ;;
+    *)
+    play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+    ;;
+    esac
+done
+}
+
+# Function to ask for login password
+loginfunc () {
+clear
+display_center "$BASE_DIR/greeterheader.txt"
+echo "$greeter"
+echo
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo "Enter login password:" | pv -qL 100
+read -s password
+if [[ "$password" == "pterodactyl" ]]; then
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    play -q $BASE_DIR/ui_hacking_passgood.wav -t alsa
+    sleep 0.5
+    welcome_art=$(cat <<-EOF
+    Access Granted.
+    Welcome, Overseer.
+EOF
+)
+
+    center_multiline_text "$welcome_art."
+    sleep 1.5
+    mainmenufunc
+elif [[ "$password" == "#%KL!=?" ]]; then
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    hacking_game
+elif [[ "$password" == "exit" ]]; then
+    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+    echo "Goodbye!" && exit
+else
+    play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+    echo "Incorrect password. Please try again." | pv -qL 100
+    loginfunc
+fi
+}
+
+
+# Function to generate a random string of characters
+generate_random_chars() {
+local len=$1
+tr -dc 'A-Za-z0-9!@#$%^&*()_+-=[]{}|;:,.<>/?' < /dev/urandom | head -c $len
+}
+
+# Function to insert passwords randomly into a line of random characters
+generate_line_with_password() {
+local password=$1
+local line_length=60  # Increased line length to accommodate spacing
+local password_length=${#password}
+local start=$(( RANDOM % (line_length - password_length - 2) + 1 ))  # Ensure space for leading and trailing spaces
+local pre=$(generate_random_chars $start)
+local post=$(generate_random_chars $(( line_length - start - password_length - 2 )))
+echo "$pre $password $post"  # Spaces added around the password
+}
+
+# Function to start the hacking game
+hacking_game() {
+clear
+local passwords=("WINTER" "FILTER" "MINTER" "KITTEN" "BINDER" "WINNER" "FINDER" "THINKER" "SPLINTER" "TINKER" "CLINKER" "SINKER" "PINKER" "RISKER" "BLINKER")
+local max_attempts=6
+
+# Randomly select one password from the list
+local correct_password="${passwords[$RANDOM % ${#passwords[@]}]}"
+
+# Initialize attempts
+local attempt_count=0
+local guess=""
+local correct_count=0
+
+echo "Passcode Bypass Terminal Activated" | pv -qL 100
+echo "Guess the password. All passwords have ${#correct_password} characters." | pv -qL 100
+echo
+read -p "Press enter to continue"
+
+clear
+# Display the hacking interface with random characters and passwords mixed in randomly
+echo "0xF9C1 |$(generate_random_chars 10)"
+for pass in "${passwords[@]}"; do
+echo "|$(generate_line_with_password $pass)|"
+done
+echo "|$(generate_random_chars 50)| 0xFA3E"
+
+
+# Main game loop
+while (( attempt_count < max_attempts )); do
+echo -n "Enter your guess ($(( max_attempts - attempt_count )) attempts left): " | pv -qL 100
+read guess
+guess=$(echo "$guess" | tr '[:lower:]' '[:upper:]')  # Convert to uppercase for comparison
+
+# Check if guess is valid
+if [[ "${#guess}" -ne "${#correct_password}" ]]; then
+    play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+    echo "Invalid password length. All passwords have ${#correct_password} characters." | pv -qL 100
+    continue
+fi
+
+# Check if the guess is correct
+if [[ "$guess" == "$correct_password" ]]; then
+    sleep 1.5
+    clear
+    play -q $BASE_DIR/ui_hacking_passgood.wav -t alsa
+    welcome_art=$(cat <<-EOF
+    Access Granted.
+    Welcome, Overseer.
+EOF
+)
+
+    center_multiline_text "$welcome_art."
+    sleep 1.5
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    mainmenufunc
+fi
+
+# Calculate correct letters in the correct positions
+correct_count=$(check_password "$guess" "$correct_password")
+play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+echo "Incorrect password. $correct_count/${#correct_password} correct." | pv -qL 100
+
+# Increment attempt count
+((attempt_count++))
+
+# Check for attempt exhaustion
+if (( attempt_count >= max_attempts )); then
+clear
+play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+echo "Terminal locked. Starting cooldown..." | pv -qL 100
+for (( i=10; i>0; i-- )); do
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    echo -n "$i... " | pv -qL 100
+    sleep 1
+done
+play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+echo "Cooldown complete. You may try again." | pv -qL 100
+hacking_game
+fi
+done
+}
+
+# Function to compare guess with the correct password
+check_password() {
+local guess=$1
+local correct=$2
+local count=0
+
+for (( i=0; i<${#guess}; i++ )); do
+if [[ "${guess:$i:1}" == "${correct:$i:1}" ]]; then
+    ((count++))
+fi
+done
+
+echo $count
+}
+
+
+# Function to display the main menu
+startupfunc() {
+
+clear
+display_center "$BASE_DIR/greeterheader.txt"
+echo "$greeter"
+echo
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo "Choose an option:"| pv -qL 100
+echo "1. Login" | pv -qL 100
+echo "2. Exit" | pv -qL 100
+
+read choice
+
+case $choice in
+1)
+    play -q $BASE_DIR/ui_hacking_passgood.wav -t alsa
+    clear
+    loginfunc
+    ;;
+2)
+    play -q $BASE_DIR/ui_hacking_passgood.wav -t alsa
+    clear
+    echo "Goodbye!"
+    exit
+    ;;
+*)
+    play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+    echo "Invalid choice. Please try again."
+    startupfunc
+    ;;
+esac
+}
+
+
+# Define the spinner characters
+spinner="/-\|"
+
+# Define the number of iterations
+iterations=50
+
+
+# Function to display the spinner and progress bar centered in the terminal
+spin() {
+    local i=0
+    local terminal_width=$(tput cols)
+    local terminal_height=$(tput lines)
+    local padding_horizontal=$(( (terminal_width - 24) / 2 )) # Calculate horizontal padding for centering
+    local padding_vertical=$(( (terminal_height / 2) - 1 )) # Calculate vertical padding for centering
+
+    # Print empty lines for vertical centering
+    for (( j = 0; j < padding_vertical; j++ )); do
+        printf "\n"
+    done
+
+    printf "%*s%s\n" $padding_horizontal "" "Launching Interface"
+
+
+    while [ $i -lt $iterations ]; do
+        # Calculate progress
+        progress=$((i * 100 / iterations))
+        # Calculate the length of the progress bar based on progress
+        bar_length=$((i * 20 / iterations))
+        # Generate the progress bar string
+        progress_bar=$(printf '=%.0s' $(seq 1 $bar_length))
+        # Display spinner and progress bar centered
+        printf "\r%*s[%c] [%-${bar_length}s] %d%%" $padding_horizontal "" "${spinner:i++%${#spinner}:1}" "$progress_bar" "$progress"
+        sleep 0.1
+    done
+}
+
+#some random aesthetic startup junk
+clear
+play -q $BASE_DIR/computerstart.wav -t alsa &
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Initiating Etherflow Circuits... | pv -qL 80
+sleep 3
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Loading Unified OS...  | pv -qL 80
+sleep 0.5
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Calibrating Mana Cores to Ley Lines...  | pv -qL 80
+sleep 0.2
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Syncing with Astral Chronometers...  | pv -qL 80
+sleep 0.8
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Securing with Ward Locks and Glyphs...  | pv -qL 80
+sleep 0.4
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Engaging Arcane Logic Engines...  | pv -qL 80
+sleep 0.9
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+echo Compiling Spell Scripts...  | pv -qL 80
+sleep 0.3
+play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+clear
+spin
+sleep 1
+clear
+
+# ASCII Art as a single string, preserving new lines
+ascii_art=$(cat <<-EOF
+████████╗ █████╗ ██╗██████╗ 
+╚══██╔══╝██╔══██╗██║██╔══██╗
+   ██║   ███████║██║██████╔╝
+   ██║   ██╔══██║██║██╔══██╗
+   ██║   ██║  ██║██║██████╔╝
+   ╚═╝   ╚═╝  ╚═╝╚═╝╚═════╝
+EOF
+)
+
+center_multiline_text "$ascii_art"
+
+#echo "==============================================" | pv -qL 50
+play -q $BASE_DIR/ui_hacking_passgood.wav -t alsa
+sleep 3
+
+
+#goes to the main men
+# Call the login function
+startupfunc
+
