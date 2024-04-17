@@ -36,7 +36,7 @@ You can also enter that command in your startup manager, as well as make launche
    * Run the following:
 ```
 brew install sox pv
-brew cask install cool-retro-term
+brew install --cask cool-retro-term
 git clone https://github.com/akjoelhede/Falloutpipboy.git
 /Applications/cool-retro-term.app/Contents/MacOS/cool-retro-term --fullscreen --noclose -e bash $HOME/Fallout3Terminal/terminalscript
 ```
