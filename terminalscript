@@ -497,41 +497,69 @@ done
         done
 }
 
-#same as main menu screen function, but without the annoying animations
-repeatmainmenufunc ()
-{
-clear
+# Function to check for a connected security key and grant access
+check_security_key() {
+    # Define the vendor and product ID of your security key
+    local vendor_id="0483"  # Replace XXXX with your key's vendor ID
+    local product_id="5741"  # Replace YYYY with your key's product ID
 
-display_center "$BASE_DIR/greeterheader.txt"
-echo "$greeter" 
-play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
-echo Choose Operation? | pv -qL 100
-COLUMNS=12
-select menuchoice in "View Journal Entries" "Log a Journal Entry" "Delete a Journal Entry" "Exit Log"
-do
-    case $menuchoice in
-    "View Journal Entries")
-    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
-    viewentriesfunc
-    ;;
-    "Log a Journal Entry")
-    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
-    writeentryfunc
-    ;;
-    "Delete a Journal Entry")
-    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
-    deleteentryfunc
-    ;;
-    "Exit Log")
-    play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
-    echo Goodbye! && exit
-    ;;
-    *)
-    play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
-    ;;
-    esac
-done
+    # Use lsusb to check if the device is connected
+    if lsusb | grep -q "ID $vendor_id:$product_id"; then
+        clear
+        bypass_good_art=$(cat <<-EOF
+    Terminal Bypass Key is Connected.
+    Please stand by.
+EOF
+)
+
+        center_multiline_text "$bypass_good_art."
+        sleep 1.5
+        terminal_func
+    else
+        clear
+        bypass_bad_art=$(cat <<-EOF
+    Terminal Bypass key is Not Connected.
+    Access Denied.
+    Returning to main menu
+EOF
+)
+
+        center_multiline_text "$bypass_bad_art."
+        sleep 1.5
+        startupfunc
+    fi
 }
+
+# Function to ask for login password
+terminal_func () {
+    clear
+    display_center "$BASE_DIR/greeterheader.txt"
+    echo "$greeter"
+    echo
+    play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
+    echo "Enter command" | pv -qL 100
+    read command
+    if [[ "$command" == "sysadmin571_bypass/:" ]]; then
+        play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+        play -q $BASE_DIR/ui_hacking_passgood.wav -t alsa
+        sleep 0.5
+        echo "Launching Terminal Bypass"
+        sleep 1.5
+        hacking_game
+    elif [[ "$command" == "exit" ]]; then
+        play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
+        clear
+        echo "Goodbye!" && startupfunc
+        sleep 1.5 
+        startupfunc
+    else
+        play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
+        echo "Unknown Command. Please try again." | pv -qL 100
+        clear
+        terminal_func
+    fi
+}
+
 
 # Function to ask for login password
 loginfunc () {
@@ -541,7 +569,7 @@ echo "$greeter"
 echo
 play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
 echo "Enter login password:" | pv -qL 100
-read -s password
+read password
 if [[ "$password" == "pterodactyl" ]]; then
     play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
     play -q $BASE_DIR/ui_hacking_passgood.wav -t alsa
@@ -555,7 +583,7 @@ EOF
     center_multiline_text "$welcome_art."
     sleep 1.5
     mainmenufunc
-elif [[ "$password" == "#%KL!=?" ]]; then
+elif [[ "$password" == "sysadmin571_bypass/:" ]]; then
     play -q $BASE_DIR/ui_hacking_charenter_01.wav -t alsa
     hacking_game
 elif [[ "$password" == "exit" ]]; then
@@ -567,6 +595,7 @@ else
     loginfunc
 fi
 }
+
 
 
 # Function to generate a random string of characters
@@ -696,6 +725,7 @@ play -q $BASE_DIR/ui_hacking_charscroll.wav -t alsa
 echo "Choose an option:"| pv -qL 100
 echo "1. Login" | pv -qL 100
 echo "2. Exit" | pv -qL 100
+echo "3. Terminal" | pv -qL 100
 
 read choice
 
@@ -710,6 +740,11 @@ case $choice in
     clear
     echo "Goodbye!"
     exit
+    ;;
+3)
+    play -q $BASE_DIR/ui_hacking_passgood.wav -t alsa
+    clear
+    check_security_key
     ;;
 *)
     play -q $BASE_DIR/ui_hacking_passbad.wav -t alsa
