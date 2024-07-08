@@ -14,8 +14,6 @@ You must have the following:
 
 This has not been tested on Windows or *BSD operating systems.
 
-Thanks to gitHub user iFloris, there are now instructions to run this on MacOS! Read on below.
-
 # Download and run Fallout3Terminal in Linux
 
 To run this script clone this repository, make "terminalscript" an executable , and run `cool-retro-term` as follows:
@@ -23,20 +21,7 @@ To run this script clone this repository, make "terminalscript" an executable , 
 ```bash
 git clone https://github.com/akjoelhede/Falloutpipboy.git
 chmod +x $HOME/Fallout3Terminal/terminalscript
-cool-retro-term --fullscreen --noclose -e bash $HOME/Fallout3Terminal/terminalscript
+cool-retro-term --fullscreen --noclose -e bash $HOME/Documents/Falloutpipboy/terminalscript
 ```
 
 You can also enter that command in your startup manager, as well as make launcher with it!
-
-# Download and Run Fallout3Terminal on MacOS
-
- ( Instructions provided by user iFloris! )
-
-* Have homebrew installed
-   * Run the following:
-```
-brew install sox pv
-brew install --cask cool-retro-term
-git clone https://github.com/akjoelhede/Falloutpipboy.git
-/Applications/cool-retro-term.app/Contents/MacOS/cool-retro-term --fullscreen --noclose -e bash $HOME/Fallout3Terminal/terminalscript
-```
